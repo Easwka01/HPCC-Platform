@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.lexisnexis.risk</groupId>
+	<artifactId>RoxiePR_ProdDRTest</artifactId>
+	<packaging>jar</packaging>
+	<version>1.2</version>
+
+	<properties>
+		<selenium.version>2.49.1</selenium.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<slf4j.version>1.7.19</slf4j.version>
+	</properties>
+
+	<profiles>
+		<!-- All profiles must contain a property named 'config'. The value must 
+			refer to a properties files in the src/test/resources directory -->
+		<profile>
+			<id>local</id>
+			<properties>
+				<config>local.properties</config>
+				<email.skip>true</email.skip>
+				<email.recipient>### Put yourself here if you change the above to
+					'false' ###</email.recipient>
+			</properties>
+		</profile>
+		<profile>
+			<id>dev</id>
+			<properties>
+				<config>qatoolshealthcarebatch.properties</config>
+				<email.skip>true</email.skip>
+				<email.recipient>### Put yourself here if you change the above to
+					'false' ###</email.recipient>
+			</properties>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+		
+		<profile>
+			<id>staging</id>
+			<properties>
+				<config>qatoolshealthcarebatch.properties</config>
+				<email.skip>true</email.skip>
+				<email.recipient>### Put yourself here if you change the above to
+					'false' ###</email.recipient>
+			</properties>
+			
+		</profile>
+
+	</profiles>
+
+
+	<build>
+		<defaultGoal>test</defaultGoal>
+
+		<plugins>
+			<!-- <plugin> -->
+			<!-- <groupId>org.apache.maven.plugins</groupId> -->
+			<!-- <artifactId>maven-plugin-plugin</artifactId> -->
+			<!-- <version>3.4</version> -->
+			<!-- <configuration> -->
+			<!-- <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound> -->
+			<!-- </configuration> -->
+			<!-- <executions> -->
+			<!-- <execution> -->
+			<!-- <id>default-descriptor</id> -->
+			<!-- <goals> -->
+			<!-- <goal>descriptor</goal> -->
+			<!-- </goals> -->
+			<!-- <phase>process-classes</phase> -->
+			<!-- </execution> -->
+			<!-- </executions> -->
+			<!-- </plugin> -->
+
+			<plugin>
+				<groupId>net.revelc.code</groupId>
+				<artifactId>formatter-maven-plugin</artifactId>
+				<version>0.5.2</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.eclipse.text</groupId>
+						<artifactId>org.eclipse.text</artifactId>
+						<version>3.5.101</version>
+					</dependency>
+					<dependency>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>org.eclipse.jdt.core</artifactId>
+						<version>3.10.0.v20140604-1726</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<configFile>${project.basedir}/src/config/build/formatters.xml</configFile>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.5.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19</version>
+				<configuration>
+					<groups>${testcase.groups}</groups>
+				</configuration>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</execution>
+					<execution>
+						<id>integration-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<configuration>
+							<systemPropertiesFile>src/test/resources/${config}</systemPropertiesFile>
+							<groups>${testcase.groups}</groups>
+							<testErrorIgnore>true</testErrorIgnore>
+							<testFailureIgnore>true</testFailureIgnore>
+						</configuration>
+					</execution>
+				</executions>
+
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.4.0</version>
+				<executions>
+					<execution>
+						<id>aggregate-junit-reports</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<mainClass>com.lexisnexis.ins.portal.testharness.reports.ReportGenerator</mainClass>
+					<arguments>
+						<argument>-src</argument>
+						<argument>target/surefire-reports</argument>
+						<argument>-size</argument>
+						<argument>512</argument>
+					</arguments>
+				</configuration>
+			</plugin>
+
+
+			<plugin>
+				<groupId>ch.fortysix</groupId>
+				<artifactId>maven-postman-plugin</artifactId>
+				<version>0.1.6</version>
+				<configuration>
+					<skip>false</skip>
+					<subject>THOR ECL Watch Alpha Prod 6.4.24-1 Tests Results</subject>
+					<from>eclwatch-maven-postman@localhost</from>
+					<htmlMessageFile>target/surefire-reports/report-summary.html</htmlMessageFile>
+					<failonerror>true</failonerror>
+					<mailhost>mailgate2.lexisnexis.com</mailhost>
+					<receivers>
+						<receiver>kalaiarasi.easwaran@lexisnexis.com</receiver>
+						
+					</receivers>
+					<fileSets>
+						<fileSet>
+							<directory>target/surefire-reports</directory>
+							<includes>
+								<include>report-full.html</include>
+							</includes>
+						</fileSet>
+					</fileSets>
+				</configuration>
+				<executions>
+					<execution>
+						<id>send-failure-email</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>send-mail</goal>
+						</goals>
+						<configuration>
+							<groovyCondition><![CDATA[(errors > 0 || failures > 0)]]></groovyCondition>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>net.revelc.code</groupId>
+										<artifactId>formatter-maven-plugin</artifactId>
+										<versionRange>[0.5.2,)</versionRange>
+										<goals>
+											<goal>format</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-remote-driver</artifactId>
+			<version>${selenium.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-support</artifactId>
+			<version>${selenium.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>args4j</groupId>
+			<artifactId>args4j</artifactId>
+			<version>2.33</version>
+		</dependency>
+		<!-- <dependency> -->
+		<!-- <groupId>org.apache.maven.plugin-tools</groupId> -->
+		<!-- <artifactId>maven-plugin-annotations</artifactId> -->
+		<!-- <version>3.4</version> -->
+		<!-- </dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>org.apache.maven</groupId> -->
+		<!-- <artifactId>maven-plugin-api</artifactId> -->
+		<!-- <version>3.3.9</version> -->
+		<!-- </dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>org.apache.maven.plugins</groupId> -->
+		<!-- <artifactId>maven-plugin-plugin</artifactId> -->
+		<!-- <version>3.4</version> -->
+		<!-- <type>maven-plugin</type> -->
+		<!-- <exclusions> -->
+		<!-- <exclusion> -->
+		<!-- <artifactId>qdox</artifactId> -->
+		<!-- <groupId>com.thoughtworks.qdox</groupId> -->
+		<!-- </exclusion> -->
+		<!-- </exclusions> -->
+		<!-- </dependency> -->
+	</dependencies>
+
+	<scm>
+		<connection>scm:git:ssh:git@gitlab.ins.risk.regn.net:cmd/portal-test.git</connection>
+		<url>https://gitlab.ins.risk.regn.net/cmd/portal-test</url>
+	</scm>
+
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>2.19.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<version>2.9</version>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>dependencies</report>
+							<report>project-team</report>
+							<report>cim</report>
+							<report>license</report>
+							<report>scm</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
+
+
+</project>
