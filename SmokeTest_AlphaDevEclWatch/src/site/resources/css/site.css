@@ -1,0 +1,15 @@
+
+/* Remove ugly black HARD CODED borders */
+table {
+	border-style: none !important;
+}
+
+table > thead > tr > th {
+	border-style: none !important;
+}
+
+table> tbody > tr> td {
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+}
