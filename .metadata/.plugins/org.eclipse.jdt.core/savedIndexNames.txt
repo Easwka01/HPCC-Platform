@@ -1,0 +1,19 @@
+INDEX VERSION 1.127+C:\GitHub\HPCC-Platform\.metadata\.plugins\org.eclipse.jdt.core
+3305851642.index
+2200951701.index
+399656144.index
+1928299879.index
+2853889246.index
+2468993658.index
+1489135860.index
+1289726979.index
+1532633709.index
+402164846.index
+4282472541.index
+1400168139.index
+15343958.index
+670082210.index
+4008549001.index
+4041367366.index
+1861534403.index
+542495344.index

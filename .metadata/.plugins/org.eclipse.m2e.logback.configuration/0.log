@@ -1,0 +1,16 @@
+2021-06-09 11:40:14,750 [Worker-5] INFO  o.e.m.c.i.l.LifecycleMappingFactory - Using org.eclipse.m2e.jdt.JarLifecycleMapping lifecycle mapping for MavenProject: com.lexisnexis.risk:SeleniumFramework_BocaDev:1.2 @ C:\Kalai\Selenium\SeleniumFramework_BocaDev\pom.xml.
+2021-06-09 11:40:18,618 [Worker-5] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding source folder /SeleniumFramework_BocaDev/src/main/java
+2021-06-09 11:40:18,620 [Worker-5] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding resource folder /SeleniumFramework_BocaDev/src/main/resources
+2021-06-09 11:40:18,624 [Worker-5] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding source folder /SeleniumFramework_BocaDev/src/test/java
+2021-06-09 11:40:18,624 [Worker-5] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding resource folder /SeleniumFramework_BocaDev/src/test/resources
+2021-06-09 11:40:18,915 [Worker-5] INFO  o.e.m.c.i.p.ProjectConfigurationManager - Imported and configured 1 project(s) in 12 sec
+2021-06-09 11:40:21,038 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-09 11:40:21,046 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 1 resource
+2021-06-09 11:40:23,147 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to format source files.
+2021-06-09 11:40:23,282 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Number of files to be formatted: 86
+2021-06-09 11:40:24,671 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Successfully formatted: 0 file(s)
+2021-06-09 11:40:24,672 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Fail to format        : 0 file(s)
+2021-06-09 11:40:24,672 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Skipped               : 86 file(s)
+2021-06-09 11:40:24,672 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Approximate time taken: 1s
+2021-06-09 11:40:24,677 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-09 11:40:24,679 [Worker-10] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
