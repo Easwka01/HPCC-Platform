@@ -34,7 +34,7 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Step 3 - Have GitHub Actions Build with Maven Project
-        run: mvn -B package --file pom.xml
+        run: mvn -B package SeleniumFramework_BocaDev/pom.xml
    
       - name: Step 4 - List the current directory
         run: ls -a
