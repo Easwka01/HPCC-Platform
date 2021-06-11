@@ -62,3 +62,5 @@
 2021-06-11 13:43:35,671 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Fail to format        : 0 file(s)
 2021-06-11 13:43:35,671 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Skipped               : 85 file(s)
 2021-06-11 13:43:35,671 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Approximate time taken: 0s
+2021-06-11 13:43:35,673 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-11 13:43:35,674 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
