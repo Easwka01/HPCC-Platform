@@ -64,3 +64,36 @@
 2021-06-11 13:43:35,671 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Approximate time taken: 0s
 2021-06-11 13:43:35,673 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
 2021-06-11 13:43:35,674 [Worker-155] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
+2021-06-14 16:58:17,781 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 16:58:17,788 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 1 resource
+2021-06-14 16:58:17,793 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 16:58:17,794 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
+2021-06-14 17:01:02,124 [Worker-5] INFO  o.e.m.i.launch.MavenLaunchDelegate - C:\Kalai\Selenium\SeleniumFramework_BocaDev
+2021-06-14 17:01:02,126 [Worker-5] INFO  o.e.m.i.launch.MavenLaunchDelegate -  mvn -Pbocadev  -B -s C:\Users\EaswKa01\.m2\settings.xml clean post-integration-test
+2021-06-14 17:02:04,280 [Worker-11] INFO  o.e.m.i.launch.MavenLaunchDelegate - C:\Kalai\Selenium\SeleniumFramework_BocaDev
+2021-06-14 17:02:04,280 [Worker-11] INFO  o.e.m.i.launch.MavenLaunchDelegate -  mvn -Pbocadev  -B -s C:\Users\EaswKa01\.m2\settings.xml clean post-integration-test
+2021-06-14 17:04:07,744 [Worker-9] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 17:04:07,745 [Worker-9] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 0 resource
+2021-06-14 17:04:07,747 [Worker-9] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 17:04:07,749 [Worker-9] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
+2021-06-14 17:05:41,659 [Worker-11] INFO  o.e.m.c.i.p.ProjectConfigurationManager - Update started
+2021-06-14 17:05:42,975 [Worker-11] INFO  o.e.m.c.i.l.LifecycleMappingFactory - Using org.eclipse.m2e.jdt.JarLifecycleMapping lifecycle mapping for MavenProject: com.lexisnexis.risk:SeleniumFramework_BocaDev:1.2 @ C:\Kalai\Selenium\SeleniumFramework_BocaDev\pom.xml.
+2021-06-14 17:05:43,735 [Worker-11] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding source folder /SeleniumFramework_BocaDev/src/main/java
+2021-06-14 17:05:43,735 [Worker-11] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding resource folder /SeleniumFramework_BocaDev/src/main/resources
+2021-06-14 17:05:43,738 [Worker-11] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding source folder /SeleniumFramework_BocaDev/src/test/java
+2021-06-14 17:05:43,738 [Worker-11] INFO  o.e.m.j.i.AbstractJavaProjectConfigurator - Adding resource folder /SeleniumFramework_BocaDev/src/test/resources
+2021-06-14 17:05:43,906 [Worker-11] INFO  o.e.m.c.i.p.ProjectConfigurationManager - Update completed: 2 sec
+2021-06-14 17:05:45,031 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 17:05:45,033 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 1 resource
+2021-06-14 17:05:45,359 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to format source files.
+2021-06-14 17:05:45,435 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Number of files to be formatted: 85
+2021-06-14 17:05:45,602 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Successfully formatted: 0 file(s)
+2021-06-14 17:05:45,602 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Fail to format        : 0 file(s)
+2021-06-14 17:05:45,602 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Skipped               : 85 file(s)
+2021-06-14 17:05:45,602 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Approximate time taken: 0s
+2021-06-14 17:05:45,604 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 17:05:45,605 [Worker-5] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
+2021-06-14 17:17:25,114 [Worker-1] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 17:17:25,122 [Worker-1] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 1 resource
+2021-06-14 17:17:25,127 [Worker-1] INFO  o.e.m.c.i.embedder.EclipseLogger - Using 'UTF-8' encoding to copy filtered resources.
+2021-06-14 17:17:25,128 [Worker-1] INFO  o.e.m.c.i.embedder.EclipseLogger - Copying 6 resources
