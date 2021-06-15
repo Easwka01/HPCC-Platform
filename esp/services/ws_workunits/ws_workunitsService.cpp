@@ -109,6 +109,40 @@ void setActionResult(const char* wuid, CECLWUActions action, const char* result,
     results->append(*res.getClear());
 }
 
+IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
+{
+    SocketEndpoint ep;
+    getSashaServiceEP(ep, "wu-archiver", true);
+    Owned<INode> node = createINode(ep);
+    if (!node)
+        throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");
+
+    StringBuffer tmp;
+    Owned<ISashaCommand> cmd = createSashaCommand();
+    cmd->addId(wuid);
+    cmd->setAction(SCA_GET);
+    cmd->setArchived(true);
+    if (dfuWU)
+        cmd->setDFU(true);
+    if (!cmd->send(node, 1*60*1000))
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+            "Sasha (%s) took too long to respond from: Get workUnit properties for %s.",
+            ep.getUrlStr(tmp).str(), wuid);
+
+    if ((cmd->numIds() < 1) || (cmd->numResults() < 1))
+        return nullptr;
+
+    cmd->getResult(0, tmp.clear());
+    if(tmp.length() < 1)
+        return nullptr;
+
+    Owned<IPropertyTree> wu = createPTreeFromXMLString(tmp.str());
+    if (!wu)
+        return nullptr;
+
+    return wu.getClear();
+}
+
 bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IProperties* params, IArrayOf<IConstWUActionResult>* results)
 {
     if (!wuids.length())
@@ -128,6 +162,14 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
             }
             if ((action == CECLWUActions_Archive) && !validateWsWorkunitAccess(context, wuid, SecAccess_Full))
                 msg.appendf("Access denied for Workunit %s. ", wuid);
+            else if (action == CECLWUActions_Restore)
+            {
+                Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, false);
+                if (!wuProps)
+                    msg.appendf("Archived workunit %s not found.", wuid);
+                else if (!validateWsWorkunitAccessByOwnerId(context, wuProps->queryProp("@submitID"), SecAccess_Full))
+                    msg.appendf("Access denied for Workunit %s. ", wuid);
+            }
         }
         if (!msg.isEmpty())
             throw makeStringException(ECLWATCH_INVALID_INPUT, msg);
@@ -137,11 +179,6 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
         {
             StringBuffer reply;
             cmd->getId(idx, reply);
-
-            const char* wuid = wuids.item(idx);
-            if ((action == CECLWUActions_Restore) && !validateWsWorkunitAccess(context, wuid, SecAccess_Full))
-                reply.appendf("Access denied for Workunit %s. ", wuid);
-
             AuditSystemAccess(context.queryUserId(), true, "%s", reply.str());
         }
         return true;
@@ -1504,7 +1541,7 @@ void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned
     if (sashaServerIP && *sashaServerIP)
         ep.set(sashaServerIP, sashaServerPort);
     else
-        getSashaServiceEP(ep, "sasha-wu-archiver", true);
+        getSashaServiceEP(ep, "wu-archiver", true);
 
     if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
@@ -2404,7 +2441,7 @@ public:
         if (sashaServerIP && *sashaServerIP)
             ep.set(sashaServerIP, sashaServerPort);
         else
-            getSashaServiceEP(ep, "sasha-wu-archiver", true);
+            getSashaServiceEP(ep, "wu-archiver", true);
 
         Owned<INode> sashaserver = createINode(ep);
 
@@ -2802,8 +2839,14 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
 
 static bool isResultRequestSzTooBig(unsigned __int64 start, unsigned requestCount, unsigned __int64 resultSz, unsigned resultRows, unsigned __int64 limitSz)
 {
-    if ((0 == requestCount) || (0 == resultRows))
+    if ((0 == start) && (0 == requestCount)) // all being requested
         return resultSz > limitSz;
+    else if (0 == resultRows)
+    {
+        // if resultRows == 0, have to assume the row count of the file is unknown (e.g. because sprayed and no meta)
+        // There is insuficient information to validate if the result will be too big.
+        return false;
+    }
     else
     {
         if (start+requestCount > resultRows)
@@ -3126,40 +3169,6 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
-}
-
-IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
-{
-    SocketEndpoint ep;
-    getSashaServiceEP(ep, "sasha-wu-archiver", true);
-    Owned<INode> node = createINode(ep);
-    if (!node)
-        throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");
-
-    StringBuffer tmp;
-    Owned<ISashaCommand> cmd = createSashaCommand();
-    cmd->addId(wuid);
-    cmd->setAction(SCA_GET);
-    cmd->setArchived(true);
-    if (dfuWU)
-        cmd->setDFU(true);
-    if (!cmd->send(node, 1*60*1000))
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
-            "Sasha (%s) took too long to respond from: Get workUnit properties for %s.",
-            ep.getUrlStr(tmp).str(), wuid);
-
-    if ((cmd->numIds() < 1) || (cmd->numResults() < 1))
-        return nullptr;
-
-    cmd->getResult(0, tmp.clear());
-    if(tmp.length() < 1)
-        return nullptr;
-
-    Owned<IPropertyTree> wu = createPTreeFromXMLString(tmp.str());
-    if (!wu)
-        return nullptr;
-
-    return wu.getClear();
 }
 
 void getWorkunitCluster(IEspContext &context, const char *wuid, SCMStringBuffer &cluster, bool checkArchiveWUs)
@@ -4421,6 +4430,8 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
     return true;
 }
 
+#ifndef _CONTAINERIZED
+//The code here is for legacy ECLWatch only.
 int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {
     try
@@ -4429,11 +4440,14 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         StringBuffer xslt;
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
-            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> environment = factory->openEnvironment();
-            Owned<IPropertyTree> root = &environment->getPTree();
             if(strieq(method,"WUQuery"))
             {
+#ifdef _CONTAINERIZED
+                UNIMPLEMENTED_X("CONTAINERIZED(CWsWorkunitsSoapBindingEx::onGetForm)");
+#else
+                Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+                Owned<IConstEnvironment> environment = factory->openEnvironment();
+                Owned<IPropertyTree> root = &environment->getPTree();
                 SecAccessFlags accessOwn;
                 SecAccessFlags accessOthers;
                 getUserWuAccessFlags(context, accessOwn, accessOthers, false);
@@ -4460,6 +4474,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                 }
                 xml.append("</WUQuery>");
                 xslt.append(getCFD()).append("./smc_xslt/wuid_search.xslt");
+#endif
             }
             else if (strieq(method,"WUJobList"))
             {
@@ -4517,6 +4532,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
     }
     return onGetNotFound(context, request, response, service);
 }
+#endif
 
 int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {

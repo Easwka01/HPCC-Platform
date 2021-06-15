@@ -85,7 +85,7 @@ static void initBuildVars()
     hpccBuildInfo.buildVersionMajor = BUILD_VERSION_MAJOR;
     hpccBuildInfo.buildVersionMinor = BUILD_VERSION_MINOR;
     hpccBuildInfo.buildVersionPoint = BUILD_VERSION_POINT;
-    hpccBuildInfo.buildVersion = estringify(LANGUAGE_VERSION_MAJOR) "." estringify(LANGUAGE_VERSION_MINOR) "." estringify(LANGUAGE_VERSION_SUB);
+    hpccBuildInfo.buildVersion = estringify(BUILD_VERSION_MAJOR) "." estringify(BUILD_VERSION_MINOR) "." estringify(BUILD_VERSION_POINT);
 
     hpccBuildInfo.dirName = DIR_NAME;
     hpccBuildInfo.prefix = PREFIX;
@@ -1737,15 +1737,6 @@ void doStackProbe()
 #pragma GCC diagnostic pop
 #endif
 
-extern jlib_decl bool isContainerized()
-{
-#ifdef _CONTAINERIZED
-    return true;
-#else
-    return false;
-#endif
-}
-
 #ifdef _WIN32
 
 DWORD dwTlsIndex = -1;
@@ -2430,6 +2421,14 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
 
 IPropertyTree *getHPCCEnvironment()
 {
+#ifdef _CONTAINERIZED
+#ifdef _DEBUG
+    throwUnexpectedX("getHPCCEnvironment() called from container system");
+#else
+    IERRLOG("getHPCCEnvironment() called from container system");
+#endif
+#endif
+
     StringBuffer envfile;
     if (queryEnvironmentConf().getProp("environment",envfile) && envfile.length())
     {
@@ -2453,6 +2452,12 @@ static CriticalSection envConfCrit;
 
 jlib_decl const IProperties &queryEnvironmentConf()
 {
+#if defined(_CONTAINERIZED) && defined(_DEBUG)
+    //The following line is currently hit by too many examples.  Re-enable the exception when more
+    //work has been done removing calls to getConfigurationDirectory() and other related functions.
+    //throwUnexpectedX("queryEnvironmentConf() callled from container system");
+    IERRLOG("queryEnvironmentConf() callled from container system");
+#endif
     CriticalBlock b(envConfCrit);
     if (!envConfFile)
         envConfFile.setown(createProperties(CONFIG_DIR PATHSEPSTR ENV_CONF_FILE, true));
@@ -2475,6 +2480,18 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
     if (_port)
         *_port = DAFILESRV_PORT;//default
 
+    // TLS TODO: could share mtls setting and cert/config for secure dafilesrv
+    //           but note remote cluster configs should then match this one
+
+#ifdef _CONTAINERIZED
+    //MORE: If these come from the component configuration they will need to clone the strings
+    if (_certificate)
+        *_certificate = nullptr;
+    if (_privateKey)
+        *_privateKey = nullptr;
+    if (_passPhrase)
+        *_passPhrase = nullptr;
+#else
     const IProperties & conf = queryEnvironmentConf();
     StringAttr sslMethod;
     sslMethod.set(conf.queryProp("dfsUseSSL"));
@@ -2551,6 +2568,7 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             *_passPhrase = DAFSpassPhraseDec.str();//return decrypted password. Note the preferred queryHPCCPKIKeyFiles() method returns it encrypted
         }
     }
+#endif
 
     return true;
 }
@@ -2591,8 +2609,27 @@ jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertifica
     return true;
 }
 
+#ifndef _CONTAINERIZED
+jlib_decl bool queryMtlsBareMetalConfig()
+{
+    const IProperties &conf = queryEnvironmentConf();
+    if (conf.queryProp("mtls"))
+        return conf.getPropBool("mtls", false);
+    // not in conf, check xml, since all other mp settings are checked there
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    if (env)
+        return env->getPropBool("EnvSettings/mtls", false);
+
+    return false;
+}
+#endif
+
 static IPropertyTree *getOSSdirTree()
 {
+#ifdef _CONTAINERIZED
+    IERRLOG("getOSSdirTree() called from container system");
+    return nullptr;
+#endif
     Owned<IPropertyTree> envtree = getHPCCEnvironment();
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");
@@ -3149,6 +3186,21 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool checkCreateDaemon(unsigned argc, const char * * argv)
+{
+#ifndef _CONTAINERIZED
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return false;
+            }
+            break;
+        }
+    }
+#endif
+    return true;
+}
 
 //#define TESTURL
 #ifdef TESTURL

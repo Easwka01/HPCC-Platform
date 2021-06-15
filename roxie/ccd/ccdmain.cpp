@@ -81,6 +81,7 @@ unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
+unsigned actResetLogPeriod = 300;
 bool traceRoxiePackets = false;
 bool delaySubchannelPackets = false;    // For debugging/testing purposes only
 bool defaultTimeActivities = true;
@@ -136,7 +137,7 @@ bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelLoadQueries = 8;
 bool alwaysFailOnLeaks = false;
-
+SinkMode defaultSinkMode = SinkMode::Parallel;
 unsigned continuationCompressThreshold = 1024;
 
 bool useOldTopology = false;
@@ -550,17 +551,9 @@ void readStaticTopology()
 
 int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 {
-#ifndef _CONTAINERIZED
-    for (unsigned i=0;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-            break;
-        }
-    }
-#endif
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
@@ -746,7 +739,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     // Makes debugging easier...
                     IPropertyTree *service = topology->addPropTree("services");
                     service->setProp("@name", "query");
-                    service->setPropInt("@port", 9876);
+                    service->setPropInt("@port", ROXIE_SERVER_PORT);
                 }
 #else
                 if (!topology->getCount("RoxieFarmProcess"))
@@ -779,12 +772,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
 
         Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
+#ifndef _CONTAINERIZED
         if (!directoryTree)
         {
             Owned<IPropertyTree> envFile = getHPCCEnvironment();
             if (envFile)
                 directoryTree.set(envFile->queryPropTree("Software/Directories"));
         }
+#endif
         if (directoryTree)
         {
             getConfigurationDirectory(directoryTree, "query", "roxie", roxieName, queryDirectory);
@@ -888,12 +883,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             lazyOpen = (restarts > 0);
         else
             lazyOpen = topology->getPropBool("@lazyOpen", false);
+#ifndef _CONTAINERIZED
         bool useNasTranslation = topology->getPropBool("@useNASTranslation", true);
         if (useNasTranslation)
         {
             Owned<IPropertyTree> nas = envGetNASConfiguration(topology);
             envInstallNASHooks(nas);
         }
+#endif
         useAeron = topology->getPropBool("@useAeron", false);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
@@ -1057,6 +1054,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
+        actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
@@ -1089,6 +1087,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (!parallelLoadQueries)
             parallelLoadQueries = 1;
         alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
+        const char *sinkModeText = topology->queryProp("@sinkMode");
+        if (sinkModeText)
+            defaultSinkMode = getSinkMode(sinkModeText);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
@@ -1201,7 +1202,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             ForEach(*roxieFarms)
             {
                 IPropertyTree &roxieFarm = roxieFarms->query();
-                unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
                 RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }, 0};
                 myRoles.push_back(me);
             }
@@ -1325,7 +1326,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     unsigned numThreads = roxieFarm.getPropInt("@numThreads", 0);
                     if (!numThreads)
                         numThreads = numServerThreads;
-                    unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                    unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
                     const IpAddress ip = myNode.getIpAddress();

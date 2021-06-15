@@ -206,6 +206,7 @@ void doServer(ISocket *socket)
             try
             {
                 Owned<ISocket> p = ISocket::connect(me);
+                // TLS TODO: secure_connect() here if globally configured for mtls ...
                 p->write("\0\0\0\0", 4);
                 p->close();
             }
@@ -220,6 +221,7 @@ void doServer(ISocket *socket)
         try
         {
             Owned<ISocket> client = socket->accept();
+            // TLS TODO: secure_accept() here if globally configured for mtls ...
             timeoutTopology();
             unsigned packetLen;
             client->read(&packetLen, 4);
@@ -295,6 +297,10 @@ int main(int argc, const char *argv[])
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
+
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
     // We need to do the above BEFORE we call InitModuleObjects
     try
     {
@@ -318,14 +324,6 @@ int main(int argc, const char *argv[])
                 topo_server_usage();
                 return EXIT_SUCCESS;
             }
-#ifndef _CONTAINERIZED
-            else if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-                if (daemon(1,0) || write_pidfile(argv[++i])) {
-                    perror("Failed to daemonize");
-                    return EXIT_FAILURE;
-                }
-            }
-#endif
         }
 
         // locate settings xml file in runtime dir

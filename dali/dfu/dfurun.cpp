@@ -533,7 +533,7 @@ class CDFUengine: public CInterface, implements IDFUengine
 
     CriticalSection monitorsect;
     CriticalSection subcopysect;
-    atomic_t runningflag;
+    std::atomic<unsigned> runningflag;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -541,7 +541,7 @@ public:
     CDFUengine()
     {
         defaultTransferBufferSize = 0;
-        atomic_set(&runningflag,1);
+        runningflag = 1;
         eventpusher.setown(getScheduleEventPusher());
     }
 
@@ -1069,20 +1069,22 @@ public:
         // only clear cache when nothing running (bit of a kludge)
         class CenvClear
         {
-            atomic_t &running;
+            std::atomic<unsigned> &running;
         public:
-            CenvClear(atomic_t &_running)
+            CenvClear(std::atomic<unsigned> &_running)
                 : running(_running)
             {
-                if (atomic_dec_and_test(&running)) {
+                if (--running == 0) {
+#ifndef _CONTAINERIZED
                     Owned<IEnvironmentFactory> envf = getEnvironmentFactory(false);
                     Owned<IConstEnvironment> env = envf->openEnvironment();
                     env->clearCache();
+#endif
                 }
             }
             ~CenvClear()
             {
-                atomic_inc(&running);
+                ++running;
             }
         } cenvclear(runningflag);
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1263,6 +1265,9 @@ public:
                     {
                         if (options->getPush())
                         {
+#ifdef _CONTAINERIZED
+                            UNIMPLEMENTED_X("CONTAINERIZED(ForeignFileCopy:push)");
+#else
                             // need to set ftslave location
                             StringBuffer progpath;
                             StringBuffer workdir;
@@ -1271,6 +1276,7 @@ public:
                             {
                                 opttree->setProp("@slave",progpath.str());
                             }
+#endif
                         }
                     }
                     if (destination->getMultiCopy()&&!destination->getWrap())
@@ -1657,7 +1663,7 @@ public:
                                 if (!mspec.isReplicated())
                                     needrep = false;
                             }
-#ifndef _DEBUG
+#if !defined(_DEBUG) &&  !defined(_CONTAINERIZED)
                             StringBuffer gname;
                             if (!destination->getRemoteGroupOverride()&&!testLocalCluster(destination->getGroupName(0,gname).str())) {
                                 throw MakeStringException(-1,"IMPORT cluster %s is not recognized locally",gname.str());

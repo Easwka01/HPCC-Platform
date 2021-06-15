@@ -3768,6 +3768,12 @@ soapFlag
                             parser->normalizeExpression($3, type_string, false);
                             $$.setExpr(createExprAttribute(logAtom, $3.getExpr()), $1);
                         }
+    | TOK_LOG '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, false);
+                            parser->normalizeExpression($5, type_string, false);
+                            $$.setExpr(createExprAttribute(logAtom, $3.getExpr(), $5.getExpr()), $1);
+                        }
     | XML_TOKEN         {
                             $$.setExpr(createAttribute(xmlAtom));
                             $$.setPosition($1);
@@ -8656,11 +8662,11 @@ simpleDataSet
                             parser->checkDistribution($3, $$.queryExpr(), false);
                             $$.setPosition($1);
                         }
-    | ROLLUP '(' startTopLeftRightSeqFilter ',' startLeftRowsGroup ',' transform ')' endRowsGroup endTopLeftRightFilter endSelectorSequence
+    | ROLLUP '(' startTopLeftRightSeqFilter ',' startLeftRowsGroup ',' transform optCommonAttrs ')' endRowsGroup endTopLeftRightFilter endSelectorSequence
                         {
                             parser->checkGrouped($3);
                             IHqlExpression *attr = NULL;
-                            $$.setExpr(createDataset(no_rollupgroup, { $3.getExpr(), $7.getExpr(), attr, $9.getExpr(), $11.getExpr() }));
+                            $$.setExpr(createDataset(no_rollupgroup, { $3.getExpr(), $7.getExpr(), attr, $10.getExpr(), $12.getExpr(), $8.getExpr() }));
                             $$.setPosition($1);
                         }
     | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter optCommonAttrs ')' endSelectorSequence

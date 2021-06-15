@@ -326,16 +326,9 @@ void setSlaveAffinity(unsigned processOnNode)
 
 int main( int argc, const char *argv[]  )
 {
-    // If using systemd, we will be using daemon code, writing own pid
-    for (unsigned i=0;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-            break;
-        }
-    }
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
 #if defined(WIN32) && defined(_DEBUG)
     int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
     tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
@@ -370,7 +363,7 @@ int main( int argc, const char *argv[]  )
         }
         cmdArgs = argv+1;
 #ifdef _CONTAINERIZED
-        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr));
+        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #else
         loadArgsIntoConfiguration(globals, cmdArgs);
 #endif

@@ -360,8 +360,14 @@ void initializeMetrics(CEspConfig* config)
     //
     // Initialize metrics
     Owned<IPropertyTree> pMetricsTree = config->queryConfigPTree()->getPropTree("metrics");
+    if (pMetricsTree == nullptr)
+    {
+        pMetricsTree.setown(getComponentConfigSP()->getPropTree("metrics"));
+    }
+
     if (pMetricsTree != nullptr)
     {
+        PROGLOG("Metrics initializing...");
         MetricsReporter &metricsReporter = queryMetricsReporter();
         metricsReporter.init(pMetricsTree);
         metricsReporter.startCollecting();
@@ -370,15 +376,9 @@ void initializeMetrics(CEspConfig* config)
 
 int init_main(int argc, const char* argv[])
 {
-    for (unsigned i=0;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-            break;
-        }
-    }
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
     InitModuleObjects();
 
     Owned<IProperties> inputs = createProperties(true);
@@ -475,7 +475,7 @@ int init_main(int argc, const char* argv[])
 
 #ifdef _CONTAINERIZED
         // TBD: Some esp services read daliServers from it's legacy config file
-        procpt->setProp("@daliServers", queryComponentConfig().queryProp("@daliServers"));
+        procpt->setProp("@daliServers", getComponentConfigSP()->queryProp("@daliServers"));
 #endif
 
         const char* build_ver = hpccBuildInfo.buildTag;

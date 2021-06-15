@@ -46,7 +46,6 @@
 #include "dfuerror.hpp"
 #include "daqueue.hpp"
 
-static Owned<IPropertyTree> globals;
 ILogMsgHandler * fileMsgHandler;
 Owned<IDFUengine> engine;
 
@@ -109,20 +108,15 @@ dfuserver:
 
 int main(int argc, const char *argv[])
 {
-    for (unsigned i=0;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-            break;
-        }
-    }
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
 
     NoQuickEditSection xxx;
 
+    Owned<IPropertyTree> globals;
     try
     {
         globals.setown(loadConfiguration(defaultYaml, argv, "dfuserver", "DFUSERVER", "dfuserver.xml", nullptr));

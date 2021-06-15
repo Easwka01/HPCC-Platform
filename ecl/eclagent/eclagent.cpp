@@ -231,6 +231,7 @@ public:
         while (running)
         {
             ISocket *client = socket->accept(true);
+            // TLS TODO: secure_accept() on hThor debug socket if globally configured for mtls ...
             if (client)
             {
                 client->set_linger(-1);
@@ -560,7 +561,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     agentMachineCost = getMachineCostRate();
     if (agentMachineCost > 0.0)
     {
-        IPropertyTree *costs = queryCostsConfiguration();
+        Owned<const IPropertyTree> costs = getCostsConfiguration();
         if (costs)
         {
             double softCostLimit = costs->getPropReal("@limit");
@@ -619,7 +620,7 @@ const char *EclAgent::queryTempfilePath()
 
 StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
 {
-    return buff.append(queryTempfilePath()).append(PATHSEPCHAR).append(wuid);
+    return buff.append(queryTempfilePath()).append(PATHSEPCHAR).appendLower(wuid);
 }
 
 const char *EclAgent::queryTemporaryFile(const char *fname)
@@ -1394,7 +1395,12 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
     }
     if (expandedlfn)
         *expandedlfn = lfn;
-    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite, isPrivilegedUser);
+    /*
+     * NB: this code and ILocalOrDistributedFile should be revisited when DFS is refactored
+     * hthor doesn't use it to write, but instead uses createClusterWriteHandler to handle cluster writing.
+     * See code in e.g.: CHThorDiskWriteActivity::resolve
+     */
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite, isPrivilegedUser, nullptr);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -3054,7 +3060,7 @@ char * EclAgent::getGroupName()
 #ifdef _CONTAINERIZED
     // in a containerized setup, the group is moving..
     return strdup("unknown");
-#endif
+#else
     StringBuffer groupName;
     if (!isStandAloneExe)
     {
@@ -3098,6 +3104,7 @@ char * EclAgent::getGroupName()
         }
     }
     return groupName.detach();
+#endif
 }
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
@@ -3488,7 +3495,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         }
         try
         {
-            agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", "agentexec.xml", nullptr));
+            agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", "agentexec.xml", nullptr, nullptr, false));
         }
         catch (IException *E)
         {
@@ -3497,7 +3504,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         }
     }
     else
-        agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", nullptr, nullptr));
+        agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", nullptr, nullptr, nullptr, false));
 
     installDefaultFileHooks(agentTopology);
 
@@ -3658,8 +3665,10 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"mirror","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
                 setBaseDirectory(baseDir.str(), true);
 
+#ifndef _CONTAINERIZED
             if (agentTopology->getPropBool("@useNASTranslation", true))
                 envInstallNASHooks();
+#endif
 
             if (standAloneWorkUnit)
             {

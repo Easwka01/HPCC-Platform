@@ -32,7 +32,6 @@
 #include "eventqueue.hpp"
 
 static unsigned traceLevel;
-Owned<IPropertyTree> globals;
 
 //=========================================================================================
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,7 +164,8 @@ private:
 void openLogFile()
 {
 #ifndef _CONTAINERIZED
-    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "eclscheduler");
+    Owned<IPropertyTree> config = getComponentConfig();
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(config, "eclscheduler");
     lf->beginLogging();
 #else
     setupContainerizedLogMsgHandler();
@@ -184,17 +184,8 @@ eclscheduler:
 
 int main(int argc, const char *argv[])
 {
-#ifndef _CONTAINERIZED
-    for (unsigned i=0;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-            break;
-        }
-    }
-#endif
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
 
     InitModuleObjects();
     initSignals();
@@ -210,6 +201,7 @@ int main(int argc, const char *argv[])
     else if (checkFileExists("eclccserver.xml") )
         iniFileName = "eclccserver.xml";
 
+    Owned<IPropertyTree> globals;
     try
     {
         globals.setown(loadConfiguration(defaultYaml, argv, "eclscheduler", "ECLSCHEDULER", iniFileName, nullptr));

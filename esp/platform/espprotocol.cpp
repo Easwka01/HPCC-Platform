@@ -25,24 +25,27 @@
 #ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
 #endif
+#include "jmetrics.hpp"
+
+static RelaxedAtomic<unsigned> gActiveRequests;
+
+static auto pActiveRequests = hpccMetrics::createCustomMetricAndAddToReporter("activerequests", "Number of active requests", hpccMetrics::METRICS_GAUGE, gActiveRequests);
 
 typedef IXslProcessor * (*getXslProcessor_func)();
 
-static atomic_t gActiveRequests;
-
-long ActiveRequests::getCount()
+unsigned ActiveRequests::getCount()
 {
-    return atomic_read(&gActiveRequests);
+    return gActiveRequests;
 }
 
-void ActiveRequests::inc()
+ActiveRequests::ActiveRequests()
 {
-    atomic_inc(&gActiveRequests);
+    gActiveRequests++;
 }
 
-void ActiveRequests::dec()
+ActiveRequests::~ActiveRequests()
 {
-    atomic_dec(&gActiveRequests);
+    gActiveRequests--;
 }
 
 CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)

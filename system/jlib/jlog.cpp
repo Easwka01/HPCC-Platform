@@ -197,7 +197,7 @@ const char * LogMsgJobInfo::queryJobIDStr() const
     if (isDeserialized)
         return jobIDStr;
     else if (jobID == UnknownJob)
-        return "Unknown";
+        return "UNK";
     else
         return theManager->queryJobId(jobID);
 }
@@ -2548,7 +2548,7 @@ static constexpr bool useSysLogDefault = false;
 
 void setupContainerizedLogMsgHandler()
 {
-    IPropertyTree * logConfig = queryComponentConfig().queryPropTree("logging");
+    Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig)
     {
         if (logConfig->getPropBool(logQueueDisabledAtt, false))
@@ -3108,7 +3108,11 @@ private:
         rolling = true;
         append = true;
         flushes = true;
+#ifdef _CONTAINERIZED
+        const char *logFields = nullptr;
+#else
         const char *logFields = queryEnvironmentConf().queryProp("logfields");
+#endif
         if (!isEmptyString(logFields))
             msgFields = logMsgFieldsFromAbbrevs(logFields);
         else
